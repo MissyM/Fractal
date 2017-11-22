@@ -1,6 +1,6 @@
 import { VNode, VNodeData } from './vnode'
 import { Module } from 'snabbdom/modules/module'
-import { computeEvent, InputData, ModuleAPI } from '../../core'
+import { InputData, ModuleAPI } from '../../core'
 import { isDescendant } from './utils'
 
 export interface OnGlobal {
@@ -30,9 +30,9 @@ export const globalListenersModule = (mod: ModuleAPI, state: { lastContainer: VN
         event.preventDefault()
       }
       // call function handler
-      setTimeout(() => {
-        mod.dispatch(computeEvent(event, <InputData> handler))
-      }, 0)
+      setImmediate(() => {
+        mod.dispatchEv(event, <InputData> handler)
+      })
     } else if (handler instanceof Array) {
       // call multiple handlers
       for (var i = 0; i < handler.length; i++) {

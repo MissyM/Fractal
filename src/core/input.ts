@@ -1,17 +1,10 @@
-import { Context, InputResult } from './core'
+import { Context, GenericExecutable } from './core'
 import { CtxEv, _ev, CtxAct, _act } from './interface'
 import {
   toIt,
   CtxToIt,
-  CtxNest,
-  CtxUnnestAll,
-  CtxNestAll,
-  CtxUnnest,
-  nest,
-  unnest,
-  nestAll,
-  unnestAll,
 } from './module'
+import { getDescendantIds } from './index';
 
 export interface InputHelpers {
   ctx: Context
@@ -22,11 +15,8 @@ export interface InputHelpers {
   toChild: CtxToChild
   toAct: CtxToAct
   runIt: CtxRunIt
-  nest: CtxNest
-  unnest: CtxUnnest
-  nestAll: CtxNestAll
-  unnestAll: CtxUnnestAll
   comps: CtxComponentHelpers
+  clearCache: CtxClearCache
 }
 
 export const makeInputHelpers = (ctx: Context): InputHelpers => ({
@@ -38,11 +28,8 @@ export const makeInputHelpers = (ctx: Context): InputHelpers => ({
   toChild: toChild(ctx),
   toAct: toAct(ctx),
   runIt: runIt(ctx),
-  nest: nest(ctx),
-  unnest: unnest(ctx),
-  nestAll: nestAll(ctx),
-  unnestAll: unnestAll(ctx),
   comps: _componentHelpers(ctx),
+  clearCache: _clearCache(ctx),
 })
 
 export interface CtxStateOf {
@@ -78,9 +65,9 @@ export const toChild = (ctx: Context) => async (
   isPropagated = true
 ) => {
   let childId = ctx.id + '$' + name
-  let space = ctx.components[childId]
-  if (space) {
-    await toIt(space.ctx)(inputName, msg, isPropagated)
+  let compCtx = ctx.components[childId]
+  if (compCtx) {
+    await toIt(compCtx)(inputName, msg, isPropagated)
   } else {
     ctx.error('toChild', `there are no child '${name}' in space '${ctx.id}'`)
   }
@@ -89,25 +76,52 @@ export const toChild = (ctx: Context) => async (
 // ---
 
 export interface CtxToAct {
-  (actionName: string, data?: any, isPropagated?: boolean): void
+  (actionName: string, data?: any, isPropagated?: boolean): Promise<any>
 }
 
 // generic action self caller
 export const toAct = (ctx: Context): CtxToAct => {
   let _toIt = toIt(ctx)
-  return (actionName, data, isPropagated = true) =>
-    _toIt('action', [actionName, data], isPropagated)
+  return async (actionName, data, isPropagated = true) =>
+    await _toIt('_action', [actionName, data], isPropagated)
 }
 
 export interface CtxRunIt {
-  (executables: InputResult<any>, isPropagated?: boolean): void
+  (executables: GenericExecutable<any>, isPropagated?: boolean): Promise<any>
 }
 
 // generic action self caller
 export const runIt = (ctx: Context): CtxRunIt => {
   let _toIt = toIt(ctx)
-  return (executables, isPropagated = true) =>
-    _toIt('return', executables, isPropagated)
+  return async (executables: GenericExecutable<any>, isPropagated = true) =>
+    await _toIt('_execute', executables, isPropagated)
+}
+
+export interface CtxClearCache {
+  (interfaceName: string, childNames?: string[]): void
+}
+
+// Clear interface cache
+export const _clearCache = (ctx: Context): CtxClearCache => {
+  return (interfaceName: string, childNames?: string[]) => {
+    let descendantIds, childId
+    if (childNames) {
+      for (let i = 0, childName; childName = childNames[i]; i++) {
+        childId = ctx.id + '$' + childName
+        ctx.components[childId].interfaceValues[interfaceName] = undefined
+        descendantIds = getDescendantIds(ctx, childId)
+        for (let j = 0, descId; descId = descendantIds[j]; j++) {
+          ctx.components[descId].interfaceValues[interfaceName] = undefined
+        }
+      }
+    } else {
+      ctx.components[ctx.id].interfaceValues[interfaceName] = undefined
+      descendantIds = getDescendantIds(ctx, childId)
+      for (let j = 0, descId; descId = descendantIds[j]; j++) {
+        ctx.components[descId].interfaceValues[interfaceName] = undefined
+      }
+    }
+  }
 }
 
 // --- Child components helpers: build functions for traversing components and broadcasting messages to them
@@ -124,8 +138,12 @@ export interface ComponentHelpers {
     nameFn? (name: string): string
   }): any
   executeAll (insts: Instruction[]): void
-  broadcast (inputName: string, data?: any)
+  broadcast (inputName: string, data?: any): void
+  optionalBroadcast (inputName: string, data?: any): void
+  seqBroadcast (inputName: string, data?: any): Promise<any>
+  seqOptionalBroadcast (inputName: string, data?: any): Promise<any>
   getNames (): string[]
+  getCompleteNames (): string[]
 }
 
 export interface CtxComponentHelpers {
@@ -134,23 +152,32 @@ export interface CtxComponentHelpers {
 
 export const getName = (name: string) => name.split('_')[1]
 
+export const getCompleteNames = (state: any, groupName: string) =>
+  Object.keys(state._nest)
+    .filter(name => name.split('_')[0] === groupName)
+
+export const getNames = (state: any, groupName: string) =>
+  getCompleteNames(state, groupName)
+    .map(n => n.split('_')[1])
+
 export const _componentHelpers = (ctx: Context): CtxComponentHelpers => {
   let _toChild = toChild(ctx)
   let stateOf = _stateOf(ctx)
   return groupName => {
-    let componentNames = Object.keys(ctx.components[ctx.id].components)
+    let completeNames = Object.keys(ctx.components[ctx.id].state._nest)
       .filter(name => name.split('_')[0] === groupName)
+    let componentNames = completeNames.map(n => n.split('_')[1])
     return {
       getState (key: string, options): any {
         let obj = {}
         let name
         let exceptions = options && options.exceptions
         let nameFn = options && options.nameFn
-        for (let i = 0, len = componentNames.length; i < len; i++) {
-          if (exceptions && exceptions.indexOf(componentNames[i]) === -1 || !exceptions) {
-            name = getName(componentNames[i])
+        for (let i = 0, len = completeNames.length; i < len; i++) {
+          if (exceptions && exceptions.indexOf(completeNames[i]) === -1 || !exceptions) {
+            name = getName(completeNames[i])
             name = nameFn ? nameFn(name) : name
-            obj[name] = stateOf(componentNames[i])[key]
+            obj[name] = stateOf(completeNames[i])[key]
           }
         }
         return obj
@@ -161,12 +188,34 @@ export const _componentHelpers = (ctx: Context): CtxComponentHelpers => {
         }
       },
       broadcast (inputName, data) {
-        for (let i = 0, name; name = componentNames[i]; i++) {
+        for (let i = 0, name; name = completeNames[i]; i++) {
           _toChild(name, inputName, data)
+        }
+      },
+      optionalBroadcast (inputName, data) {
+        for (let i = 0, name; name = completeNames[i]; i++) {
+          if (ctx.components[ctx.id + '$' + name].inputs[inputName]) {
+            _toChild(name, inputName, data)
+          }
+        }
+      },
+      async seqBroadcast (inputName, data) {
+        for (let i = 0, name; name = completeNames[i]; i++) {
+          await _toChild(name, inputName, data)
+        }
+      },
+      async seqOptionalBroadcast (inputName, data) {
+        for (let i = 0, name; name = completeNames[i]; i++) {
+          if (ctx.components[ctx.id + '$' + name].inputs[inputName]) {
+            await _toChild(name, inputName, data)
+          }
         }
       },
       getNames() {
         return componentNames
+      },
+      getCompleteNames() {
+        return completeNames
       }
     }
   }

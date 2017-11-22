@@ -9,10 +9,12 @@
 /utils/
 /prerender/
 /toHTML/
-/docsExamples/
+/playground/
 coverage/
 reports/
-webpack-stats.json
+dist/
+src/playground/dist/
+.fusebox
 
 # npm stuff
 node_modules/

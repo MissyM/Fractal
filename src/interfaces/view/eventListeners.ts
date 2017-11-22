@@ -1,6 +1,6 @@
 import { VNode, VNodeData } from './vnode'
 import { Module } from 'snabbdom/modules/module'
-import { computeEvent, InputData, ModuleAPI } from '../../core'
+import { InputData, ModuleAPI } from '../../core'
 
 export interface On {
   [event: string]: InputData | InputData[] | 'ignore'
@@ -18,9 +18,9 @@ export const eventListenersModule = (mod: ModuleAPI): Module => {
       if (options && options.default === false) {
         event.preventDefault()
       }
-      setTimeout(() => {
-        mod.dispatch(computeEvent(event, <InputData> handler))
-      }, 0)
+      setImmediate(() => {
+        mod.dispatchEv(event, <InputData> handler)
+      })
     } else if (handler instanceof Array) {
       // call multiple handlers
       for (var i = 0; i < handler.length; i++) {

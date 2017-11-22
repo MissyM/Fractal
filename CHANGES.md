@@ -1,22 +1,171 @@
 # Changes
 
-## Changes for Fractal core
+## Whats next?
 
-## Next
+- Generic subscribe interface
 
-- Router helpers
-- Add task input helper
+# v4.3.0
 
-## Done
+- Fix propagation data
+- Router interface MVP
+- Optimize propagation (BREAKING)
+- Remove navigo router interface
+- Fix bundlePaths in ssr helpers, do it not optional
+- Change log functions from async to sync
+- Fix destroy component hook bug
+- Change input hooks from async to sync
+- Fix component  Root id
 
-- Fix hot-swaping of dynamic components (P)
-- Change components by a function for allowing dynamic hot-swaping (P)
+## v4.2.3
+
+- Enable input hooks (HOTFIX)
+
+## v4.2.2
+
+- Fix `act` interface helper
+
+## v4.2.1
+
+- Implement `getParentCtx`, `mapAsync`, `filterAsync`, `reduceAsync` and `all` functions
+
+## v4.2.0
+
+- Improve event system, optimization and clean code
+- Replace `dispatch` in built-in hanlders
+- Remove `dispatch` for moduleAPI (BREAKING CHANGE)
+- Implement `toComp` and `dispatchEv` for ModuleAPI
+- Delete unused value interface
+
+## v4.1.17
+
+- Move fs-jetpack to dev dependencies
+
+## v4.1.16
+
+- Fix interfaces type to be async
+- Add async type to renderHTML function
+
+## v4.1.15
+
+- Implement htmlFn for replacing transformHTML function, allows customization
+- Implement transformHTML function in renderHTML
+- Implement base url for AOT / SSR
+
+## v4.1.14
+
+- Implement bundlePaths for SSR and AOT and remove bundlePath
+
+## v4.1.12-13 (Fix broken build)
+
+- Add fs-jetpack and always reads utf8 from files in AOT compilation
+
+## v4.1.11
+
+- Await for beforeInit hook
+- Fix encoding optional parameter
+- Logs and module hooks are now async
+
+## v4.1.10
+
+- Fix initial global values for rendering
+- Fix use of render in module definitions
+- Fix AOT and SSR
+- Change location of prerender template
+- Add options to `runModule`, this allow module definitions to be extendable
+
+## v4.1.9
+
+- `clearCache` now clear descendants
+- Implement `getDescendantIds` function
+
+## v4.1.8
+
+- Add `clearCache` function to input helpers
+
+## v4.1.7
+
+- Update TypeStyle dependency
+- Update Snabbdom dependency
+- Optimization in interface recalculation
+
+## v4.1.6
+
+- Fix placholderColor for Firefox
+- Remove duplicated parameter in `propagate` function
+
+## v4.1.5
+
+- Implement `optionalBroadcast`, `seqBroadcast` and `seqOptionalBroadcast` to `comps` helper in inputs
+
+## v4.1.4
+
+- Rename vws function to group
+- Add vws function for rendering an array of component names
+
+## v4.1.3
+
+- Fix ordering in action records
+
+## v4.1.2
+
+- Fix interface excecution
+
+## v4.1.1
+
+- Add type signature for async interfaces
+
+## v4.1.0
+
+- Interfaces are now async
+
+## v4.0.6
+
+- Add global active flag to modules
+- Disable render when init components and add moduleRender option
+- Inputs processes can continue execution when hot-swap ocurrs
+
+## v4.0.5
+
+- Updates can be async functions and sync too
+
+## v4.0.4
+
+- Fix component update flag
+
+## v4.0.3
+
+- Add getCompleteNames method
+
+## v4.0.2
+
+- Add getNames method
+- Add getCompleteName type signature to ComponentHelpers
+
+## v4.0.1
+
+- All component methods now return values
+
+## v4.0.0
+
+- Fix: init and destroy are not called during hot-swaping
+- Fix generic propagation name argument
+- Fix lifecycle ordering
+- Add init and destroy lifecycle hooks
+- Remove unused input helpers
+- init and destroy input are handled in the lifecycle
+- Merge Contexts and Spaces into only Contexts
+- Components are into _nest variable of parent
+- Remove input returns
+- Add AddComp helper for dynamic composing
+- Add _remove default action helper for dynamic composing
+- Remove name from components
+- Add Set generic action by default
+- Add _action and _execute inputs
+- Remove return and action
+- Add 'record' option to record all actions
+- Actions ensures in-order execution
+- State always are an onject
 - Update TypeStyle dependency - performance boost
-- mergeStates refactored renamed to mergeComponents - Minor breaking change
-- Refactor examples
-
-## v3.3.4
-
 
 ## v3.3.3
 

@@ -1,75 +1,24 @@
-import fs = require('fs')
-import { Module, Component, RunModule } from '../core'
-import { renderHTML } from './ssr'
+import fs = require('fs-jetpack')
+import { renderHTML, StaticRenderOptions } from './ssr'
 
 export interface PrerenderOptions {
-  root: Component<any>
-  runModule: RunModule
-  encoding: string
   outputFile: string
+  cssFile?: string
   htmlFile: string
-  cssFile: string
-  isStatic?: boolean // is isS this means there are no need of JS at all
-  bundlePath?: string,
-  url?: string, // canonical url
-  componentNames?: any, // will be merged client-side
-  title?: string
-  description?: string
-  keywords?: string
-  author?: string
-  extras?: string
-  lang?: string
-  version?: string
-  cb: { (app: Module) }
 }
 
-export async function prerender ({
-  root,
-  runModule,
-  encoding,
-  isStatic,
-  outputFile,
-  htmlFile,
-  cssFile,
-  lang,
-  version,
-  url,
-  title,
-  description,
-  keywords,
-  author,
-  extras,
-  componentNames,
-  cb,
-}: PrerenderOptions) {
+export async function prerender (preOp: PrerenderOptions, op: StaticRenderOptions) {
   try {
-    let html = fs.readFileSync(htmlFile, encoding)
-    let css = fs.readFileSync(cssFile, encoding)
-    let htmlResult = await renderHTML({
-      root,
-      encoding,
-      runModule,
-      isStatic,
-      lang,
+    op.encoding = op.encoding || 'utf-8'
+    let html = fs.read(preOp.htmlFile, 'utf8')
+    let css = preOp.cssFile ? fs.read(preOp.cssFile, 'utf8') : ''
+    let htmlResult = await renderHTML(<any> {
+      ...op,
       html,
       css,
-      url,
-      version,
-      title,
-      description,
-      keywords,
-      author,
-      extras,
-      componentNames,
-      cb,
     })
-
-    fs.unlink(outputFile, err => {
-      fs.writeFile(outputFile, htmlResult, { flag: 'wx' }, err => {
-        if (err) throw err
-        console.log('Guardado en archivo ' + outputFile)
-      })
-    })
+    fs.write(preOp.outputFile, htmlResult, { atomic: true })
+    console.log('Guardado en archivo ' + preOp.outputFile)
   } catch (err) {
     throw err
   }
